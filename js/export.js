@@ -169,6 +169,8 @@ const ExportManager = {
     
     /**
      * Importer depuis Excel (CSV)
+     * Note: Cette fonction est basique et importe uniquement les noms d'élèves.
+     * Pour un import complet avec les notes, utiliser la fonction de Restore JSON.
      */
     importFromExcel(file) {
         return new Promise((resolve, reject) => {
@@ -184,24 +186,20 @@ const ExportManager = {
                         return;
                     }
                     
-                    const headers = lines[0].split(';').map(h => h.trim());
+                    // Ignorer la première ligne (en-têtes)
                     const students = [];
-                    const grades = {};
                     
-                    // Parser les lignes de données
+                    // Parser les lignes de données (format: Nom de l'élève)
                     for (let i = 1; i < lines.length; i++) {
                         const values = lines[i].split(';').map(v => v.trim());
                         if (values.length > 0 && values[0]) {
                             const studentName = values[0];
                             const studentId = Utils.generateId();
                             students.push({ id: studentId, name: studentName });
-                            
-                            // Parser les notes (à adapter selon la structure du fichier)
-                            // Cette partie devra être personnalisée selon le format exact
                         }
                     }
                     
-                    resolve({ students, grades });
+                    resolve({ students, grades: {} });
                 } catch (error) {
                     reject(error);
                 }

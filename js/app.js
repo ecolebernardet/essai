@@ -557,9 +557,16 @@ class GradeManagementApp {
     
     setupAutoSave() {
         // Sauvegarde automatique toutes les 30 secondes
-        setInterval(() => {
+        this.autoSaveInterval = setInterval(() => {
             this.saveData();
         }, 30000);
+    }
+    
+    cleanup() {
+        // Nettoyer l'intervalle d'auto-sauvegarde
+        if (this.autoSaveInterval) {
+            clearInterval(this.autoSaveInterval);
+        }
     }
 }
 

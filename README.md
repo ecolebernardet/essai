@@ -126,10 +126,10 @@ L'application utilise un code couleur pour une visualisation rapide :
 
 | Couleur | Emoji | Plage | Signification |
 |---------|-------|-------|---------------|
-| 🟡 Jaune | ⭐ | > 8.5 | Excellent |
-| 🟢 Vert | ✅ | 7-8.5 | Bien |
-| 🟠 Orange | ⚠️ | 5-7 | Moyen |
-| 🔴 Rouge | ❌ | < 5 | À améliorer |
+| 🟡 Jaune | 🟡 | > 8.5 | Excellent |
+| 🟢 Vert | 🟢 | 7-8.5 | Bien |
+| 🟠 Orange | 🟠 | 5-7 | Moyen |
+| 🔴 Rouge | 🔴 | < 5 | À améliorer |
 
 ## 💾 Sauvegarde des données
 
