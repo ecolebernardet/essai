@@ -2,433 +2,119 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Notes - École</title>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+    
+    <!-- Librairies externes -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    <title>Suivi Absences - École Collaboratif</title>
-    <style>
-        :root { --absent: #e74c3c; --excuse: #f1c40f; --dark: #2c3e50; --light: #f4f7f6; --blue: #3498db; --success: #27ae60; --gray: #95a5a6; }
-        * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--light); font-size: 11px; margin: 10px; color: #333; }
-        
-        .container { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 98vw; margin: auto; overflow-x: auto; }
-        .top-bar { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; background: #f8f9fa; padding: 12px; border-radius: 8px; border: 1px solid #eee; }
-        
-        table { border-collapse: collapse; width: 100%; table-layout: fixed; background: white; }
-        th, td { border: 1px solid #e0e0e0; padding: 2px; text-align: center; overflow: hidden; height: 32px; }
-        .month-header { background: var(--dark); color: white; cursor: pointer; font-size: 12px; transition: 0.3s; font-weight: 500; }
-        .month-header:hover { background: var(--blue); }
-        .month-header.active { background: var(--blue); font-weight: bold; }
-        .day-col { width: 35px; font-size: 10px; background: #ecf0f1; line-height: 1.2; font-weight: bold; cursor: pointer; color: #7f8c8d; }
-        .day-col:hover { background: var(--blue); color: white; }
-
-        .today-highlight { background: #eef7ff !important; box-shadow: inset 0 0 0 1px var(--blue) !important; }
-        .col-main { width: 240px; min-width: 240px; text-align: left; padding-left: 12px; background: #fff; position: sticky; left: 0; z-index: 10; border-right: 2px solid #ddd; }
-        
-        .class-row { background: #f1f4f7; font-weight: bold; }
-        .class-name-container { display: flex; align-items: center; justify-content: space-between; width: 100%; }
-        
-        /* Poignées de drag */
-        .drag-handle { cursor: grab; color: #bdc3c7; padding-right: 8px; font-size: 16px; }
-        .drag-handle-class { cursor: grab; color: var(--blue); padding-right: 10px; font-size: 18px; user-select: none; }
-        
-        .cell-abs { cursor: pointer; font-weight: bold; transition: 0.1s; }
-        .st-none { background: #fff; color: transparent; }
-        .st-A { background: var(--absent) !important; color: white !important; }
-        .st-Exc { background: var(--excuse) !important; color: black !important; }
-        
-        .stats-badge { font-size: 9px; background: white; padding: 2px 8px; border-radius: 12px; border: 1px solid #dcdde1; color: #2f3640; margin-left: auto; margin-right: 8px; font-weight: 500; }
-        .btn-main { border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; color: white; font-weight: 600; font-size: 10px; transition: 0.2s; display: inline-flex; align-items: center; gap: 5px; }
-        .btn-main:hover { filter: brightness(1.1); transform: translateY(-1px); }
-        .btn-del { background: none; border: none; color: #bdc3c7; cursor: pointer; font-size: 14px; padding: 4px; transition: 0.2s; }
-        .btn-del:hover { color: var(--absent); }
-
-        .drag-over { border-top: 3px solid var(--blue) !important; }
-
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44, 62, 80, 0.7); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
-        .modal { background: white; padding: 25px; border-radius: 16px; max-width: 500px; width: 90%; box-shadow: 0 15px 40px rgba(0,0,0,0.2); animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        @keyframes modalIn { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-        
-        .modal h2 { margin-top: 0; font-size: 18px; color: var(--dark); margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
-        .modal-content { font-size: 13px; line-height: 1.6; color: #555; margin-bottom: 20px; }
-        .modal-input { width: 100%; padding: 10px; border: 2px solid #eee; border-radius: 8px; font-family: inherit; margin-top: 10px; outline: none; transition: 0.2s; }
-        .modal-input:focus { border-color: var(--blue); }
-        .modal-buttons { display: flex; justify-content: flex-end; gap: 10px; }
-        
-        .stats-footer { margin-top: 20px; padding: 15px; background: var(--dark); color: white; border-radius: 10px; display: flex; gap: 20px; justify-content: center; font-size: 13px; }
-        .sync-status { font-size: 10px; color: #95a5a6; font-style: italic; }
-    </style>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+    <!-- Status Message -->
+    <div id="statusMessage" class="status-message"></div>
 
-<div id="modalOverlay" class="modal-overlay">
-    <div class="modal">
-        <h2 id="mTitle"></h2>
-        <div id="mContent" class="modal-content"></div>
-        <div id="mFooter" class="modal-buttons"></div>
-    </div>
-</div>
+    <!-- Container -->
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📚 Gestion des Notes</h1>
+            <div class="header-actions">
+                <button class="btn btn-primary" id="addStudentBtn">➕ Élève</button>
+                <button class="btn btn-success" id="addSubjectBtn">➕ Matière</button>
+            </div>
+        </div>
 
-<div class="container">
-    <div class="top-bar">
-        <input type="text" id="newClassName" placeholder="Nom de la classe..." style="padding: 8px; border-radius: 6px; border: 1px solid #ddd; outline: none;">
-        <button class="btn-main" onclick="addClass()" style="background: var(--dark);">+ Classe</button>
-        <button class="btn-main" onclick="document.getElementById('importCSV').click()" style="background:var(--blue);">📊 Import CSV/TXT</button>
-        <input type="file" id="importCSV" style="display:none" accept=".csv, .txt" onchange="importCSV(event)">
-        <button class="btn-main" onclick="toggleAllClasses(true)" style="background: var(--success);">📂 Déplier</button>
-        <button class="btn-main" onclick="toggleAllClasses(false)" style="background: var(--gray);">📁 Replier</button>
-        <button class="btn-main" onclick="openVacationModal()" style="background:#f39c12;">🏖️ Vacances</button>
-        <span id="syncIndicator" class="sync-status">Initialisation...</span>
-        <div style="flex-grow: 1; display: flex; justify-content: flex-end; gap: 8px;">
-            <button class="btn-main" onclick="exportJSON()" style="background:var(--gray);">💾 Backup</button>
-            <button class="btn-main" onclick="document.getElementById('restoreInput').click()" style="background:#8e44ad;">🔄 Restore</button>
-            <button class="btn-main" onclick="exportPDF()" style="background:#e74c3c;">📄 PDF</button>
-            <input type="file" id="restoreInput" style="display:none" accept=".json" onchange="importJSON(event)">
-            <button class="btn-main" onclick="openHelpModal()" style="background: #95a5a6; border-radius: 50%; width: 25px; height: 25px; padding: 0; justify-content: center;">?</button>
-            <button class="btn-main" onclick="confirmClearAll()" style="background:var(--absent);">🗑️ Reset</button>
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <button class="btn btn-primary" id="exportPdfBtn">📄 Export PDF</button>
+            <button class="btn btn-success" id="exportExcelBtn">📊 Export Excel</button>
+            <button class="btn btn-secondary" id="exportJsonBtn">💾 Backup JSON</button>
+            
+            <label for="importExcelInput" class="btn btn-primary">
+                📥 Import Excel
+            </label>
+            <input type="file" id="importExcelInput" class="file-input" accept=".csv,.xlsx,.xls">
+            
+            <label for="importJsonInput" class="btn btn-secondary">
+                🔄 Restore JSON
+            </label>
+            <input type="file" id="importJsonInput" class="file-input" accept=".json">
+            
+            <button class="btn btn-danger" id="clearDataBtn">🗑️ Effacer tout</button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Dashboard Stats -->
+            <div id="dashboard" class="dashboard-stats"></div>
+
+            <!-- Grade Table -->
+            <div class="table-container">
+                <table>
+                    <thead id="gradeTableHead">
+                        <tr>
+                            <th class="student-col">Élève</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="gradeTableBody">
+                        <tr>
+                            <td colspan="100" class="empty-state">
+                                <div class="empty-state-icon">📚</div>
+                                <h3>Aucune donnée</h3>
+                                <p>Ajoutez des élèves et des matières pour commencer</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <table id="absenceTable">
-        <thead>
-            <tr id="monthRow"><th class="col-main">Classes / Élèves</th></tr>
-            <tr id="dayRow"><th class="col-main"></th></tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-    </table>
-    <div id="globalStats" class="stats-footer"></div>
-</div>
-
-<script>
-    const SUPABASE_URL = 'https://osxbonycajarenugqsfa.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_oZNXxeJO2yNfZyzhJx3scQ_UipEH136';
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    let schoolData = [];
-    let excludedDates = [];
-    let activeMonth = null;
-    let draggedItem = null;
-    let draggedClassIdx = null;
-
-    const monthConfigs = [
-        { name: "Septembre", m: 8, y: 2025 }, { name: "Octobre", m: 9, y: 2025 }, { name: "Novembre", m: 10, y: 2025 },
-        { name: "Décembre", m: 11, y: 2025 }, { name: "Janvier", m: 0, y: 2026 }, { name: "Février", m: 1, y: 2026 },
-        { name: "Mars", m: 2, y: 2026 }, { name: "Avril", m: 3, y: 2026 }, { name: "Mai", m: 4, y: 2026 },
-        { name: "Juin", m: 5, y: 2026 }, { name: "Juillet", m: 6, y: 2026 }
-    ];
-
-    const dayLabels = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
-    let schoolMonths = [];
-
-    // --- Moteur de Modale ---
-    function showModal({ title, content, buttons, showInput = false, inputValue = "" }) {
-        return new Promise((resolve) => {
-            const overlay = document.getElementById('modalOverlay');
-            document.getElementById('mTitle').innerHTML = title;
-            document.getElementById('mContent').innerHTML = content;
-            if (showInput) {
-                document.getElementById('mContent').innerHTML += `<input type="text" id="mInput" class="modal-input" value="${inputValue}">`;
-                setTimeout(() => document.getElementById('mInput').focus(), 100);
-            }
-            const footer = document.getElementById('mFooter');
-            footer.innerHTML = '';
-            buttons.forEach(btn => {
-                const b = document.createElement('button');
-                b.className = 'btn-main';
-                b.style.background = btn.color || 'var(--gray)';
-                b.innerText = btn.text;
-                b.onclick = () => {
-                    const val = showInput ? document.getElementById('mInput').value : true;
-                    overlay.style.display = 'none';
-                    resolve(btn.action === 'cancel' ? null : val);
-                };
-                footer.appendChild(b);
-            });
-            overlay.style.display = 'flex';
-        });
-    }
-
-    async function openHelpModal() {
-    await showModal({
-        title: '📖 Guide Complet d\'Utilisation',
-        content: `
-            <div style="text-align: left; font-size: 12px; max-height: 400px; overflow-y: auto; padding-right: 5px;">
-                
-                <h3 style="color:var(--blue); border-bottom: 1px solid #eee; padding-bottom: 5px;">📍 Gestion des Absences</h3>
-                <p>Cliquez sur une cellule blanche pour changer son état. Le cycle est le suivant :<br>
-                • ⬜ <b>Vide</b> : L'élève est présent.<br>
-                • 🔴 <span style="color:var(--absent)"><b>A (Absent)</b></span> : Absence non justifiée.<br>
-                • 🟡 <span style="color:#d4ac0d"><b>Exc (Excusé)</b></span> : Absence justifiée (certificat, famille, etc.).</p>
-
-                <h3 style="color:var(--blue); border-bottom: 1px solid #eee; padding-bottom: 5px;">↕️ Organisation & Tri</h3>
-                <p><b>Pour les Classes :</b> Utilisez la poignée bleue <span style="color:var(--blue); font-weight:bold">⠿</span> pour déplacer une classe entière vers le haut ou le bas.</p>
-                <p><b>Pour les Élèves :</b> Utilisez la poignée grise <span style="color:#bdc3c7; font-weight:bold">⠿</span> pour changer l'ordre des élèves ou transférer un élève dans une autre classe (Drag & Drop).</p>
-                <p><b>Édition :</b> Cliquez directement sur le <b>nom d'un élève</b> ou d'une <b>classe</b> pour le modifier.</p>
-
-                <h3 style="color:var(--blue); border-bottom: 1px solid #eee; padding-bottom: 5px;">📅 Navigation Calendrier</h3>
-                <p>• <b>Vue Mensuelle :</b> Cliquez sur le nom d'un mois en haut pour l'isoler. Cliquez à nouveau (ou sur la flèche ⬅) pour revenir à la vue globale annuelle.</p>
-                <p>• <b>Résumé Quotidien :</b> Cliquez sur un <b>numéro de jour</b> dans l'en-tête pour afficher la liste de tous les absents de l'école pour cette date précise.</p>
-                <p>• <b>Vacances :</b> Le bouton 🏖️ permet de définir des périodes. Les jours de vacances seront automatiquement masqués du tableau.</p>
-
-                <h3 style="color:var(--blue); border-bottom: 1px solid #eee; padding-bottom: 5px;">📤 Exports & Sécurité</h3>
-                <p>• 📄 <b>PDF :</b> Génère un rapport détaillé (Nom, décompte A/Exc, et liste des dates). <i>Note : Vous devez d'abord sélectionner un mois.</i></p>
-                <p>• 💾 <b>Backup :</b> Télécharge un fichier <code>.json</code>. Utilisez-le régulièrement pour garder une copie de secours sur votre ordinateur.</p>
-                <p>• ☁️ <b>Cloud :</b> La synchronisation est automatique dès qu'une modification est faite (voyant vert ✅).</p>
-
-                <div style="background:#fff3cd; padding:10px; border-radius:8px; border-left:4px solid #ffc107; margin-top:10px;">
-                    ⚠️ <b>Attention :</b> Le bouton <b>Reset</b> efface l'intégralité des données du serveur. Utilisez-le uniquement pour préparer une nouvelle année scolaire.
+    <!-- Modal Ajouter Élève -->
+    <div id="studentModal" class="modal-overlay">
+        <div class="modal">
+            <h2>➕ Ajouter un élève</h2>
+            <form id="studentForm">
+                <div class="form-group">
+                    <label for="studentName">Nom de l'élève</label>
+                    <input type="text" id="studentName" class="form-input" required placeholder="Ex: Martin Dupont">
                 </div>
-            </div>
-        `,
-        buttons: [{ text: 'J\'ai compris', color: 'var(--dark)' }]
-    });
-}
-
-    // --- Cloud & Logique ---
-    async function loadFromCloud() {
-        try {
-            const { data } = await _supabase.from('absences_data').select('content').eq('id', 1).single();
-            if (data) { 
-                schoolData = data.content.schoolData || []; 
-                excludedDates = data.content.excludedDates || [];
-                document.getElementById('syncIndicator').innerText = "✅ Connecté"; 
-                const now = new Date();
-                const foundIdx = monthConfigs.findIndex(m => m.m === now.getMonth() && m.y === now.getFullYear());
-                if (foundIdx !== -1 && activeMonth === null) activeMonth = foundIdx;
-                refreshSchoolMonths();
-                renderAll(); 
-            }
-        } catch (e) { console.error(e); }
-    }
-
-    async function save() {
-        document.getElementById('syncIndicator').innerText = "☁️ Sauvegarde...";
-        await _supabase.from('absences_data').upsert({ id: 1, content: { schoolData, excludedDates } });
-        document.getElementById('syncIndicator').innerText = "✅ Synchronisé";
-    }
-
-    function refreshSchoolMonths() {
-        schoolMonths = monthConfigs.map((conf) => {
-            let days = []; 
-            let d = new Date(conf.y, conf.m, 1);
-            while (d.getMonth() === conf.m) { 
-                const isWorkDay = [1, 2, 4, 5].includes(d.getDay());
-                const isVacation = excludedDates.some(v => {
-                    const current = new Date(conf.y, conf.m, d.getDate());
-                    return current >= new Date(v.start) && current <= new Date(v.end);
-                });
-                if (isWorkDay && !isVacation) days.push({ num: d.getDate(), label: dayLabels[d.getDay()] }); 
-                d.setDate(d.getDate() + 1); 
-            }
-            return { name: conf.name, days };
-        });
-    }
-
-    function addClass() { 
-        const v = document.getElementById('newClassName').value; 
-        if(v){ schoolData.push({name:v, students:[], isOpen:true}); save(); renderAll(); document.getElementById('newClassName').value=''; } 
-    }
-
-    // --- Drag & Drop ---
-    function onDragStart(cIdx, sIdx) { draggedItem = { cIdx, sIdx }; draggedClassIdx = null; }
-    function onClassDragStart(cIdx) { draggedClassIdx = cIdx; draggedItem = null; }
-    
-    function onDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
-    function onDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
-    
-    function onDrop(e, targetCIdx, targetSIdx) {
-        e.preventDefault(); e.currentTarget.classList.remove('drag-over');
-        
-        // Cas 1 : Déplacement d'une classe
-        if (draggedClassIdx !== null) {
-            const classToMove = schoolData.splice(draggedClassIdx, 1)[0];
-            schoolData.splice(targetCIdx, 0, classToMove);
-            draggedClassIdx = null;
-        } 
-        // Cas 2 : Déplacement d'un élève
-        else if (draggedItem !== null) {
-            const student = schoolData[draggedItem.cIdx].students.splice(draggedItem.sIdx, 1)[0];
-            if (targetSIdx === null) schoolData[targetCIdx].students.push(student);
-            else schoolData[targetCIdx].students.splice(targetSIdx, 0, student);
-            draggedItem = null;
-        }
-        save(); renderAll();
-    }
-
-    // --- Rendu ---
-    function renderAll() {
-        // Header
-        const mRow = document.getElementById('monthRow'); const dRow = document.getElementById('dayRow');
-        while(mRow.cells.length > 1) mRow.deleteCell(1); while(dRow.cells.length > 1) dRow.deleteCell(1);
-        schoolMonths.forEach((m, idx) => {
-            if (activeMonth !== null && activeMonth !== idx) return;
-            let th = document.createElement('th'); th.className = 'month-header' + (activeMonth === idx ? ' active' : '');
-            th.innerText = (activeMonth === idx) ? `⬅ ${m.name}` : m.name;
-            th.onclick = () => { activeMonth = (activeMonth === idx) ? null : idx; renderAll(); };
-            if (activeMonth === idx) {
-                th.colSpan = m.days.length;
-                m.days.forEach(day => { 
-                    let dTh = document.createElement('th'); 
-                    dTh.className = 'day-col' + (isToday(idx, day.num) ? ' today-highlight' : ''); 
-                    dTh.innerHTML = `${day.label}<br>${day.num}`; 
-                    dTh.onclick = (e) => { e.stopPropagation(); showDailySummary(idx, day.num, m.name); };
-                    dRow.appendChild(dTh); 
-                });
-            } else { th.colSpan = 1; dRow.appendChild(document.createElement('th')); }
-            mRow.appendChild(th);
-        });
-
-        // Body
-        const tbody = document.getElementById('tableBody'); tbody.innerHTML = '';
-        let totalA = 0, totalE = 0;
-        schoolData.forEach((classe, cIdx) => {
-            let tr = document.createElement('tr'); tr.className = 'class-row';
-            tr.draggable = true;
-            tr.ondragstart = () => onClassDragStart(cIdx);
-            tr.ondragover = onDragOver; tr.ondragleave = onDragLeave; tr.ondrop = (e) => onDrop(e, cIdx, null);
-
-            let cA = 0, cE = 0;
-            classe.students.forEach(st => Object.keys(st.data).forEach(k => { 
-                if (activeMonth===null || k.startsWith(activeMonth+'-')) { 
-                    if(st.data[k]==='A') { cA++; totalA++; } 
-                    if(st.data[k]==='Exc') { cE++; totalE++; } 
-                }
-            }));
-
-            tr.innerHTML = `<td class="col-main">
-                <div class="class-name-container">
-                    <span class="drag-handle-class">⠿</span>
-                    <span onclick="schoolData[${cIdx}].isOpen=!schoolData[${cIdx}].isOpen;renderAll();" style="cursor:pointer; font-size:14px;">${classe.isOpen?'▾':'▶'}</span>
-                    <span onclick="renameClass(${cIdx})" style="cursor:pointer; margin-left:8px; flex-grow:1; font-weight:700;">${classe.name}</span>
-                    <span class="stats-badge">Abs: ${cA} | Exc: ${cE}</span>
-                    <button class="btn-del" onclick="deleteClass(${cIdx})">🗑️</button>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('studentModal')">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Ajouter</button>
                 </div>
-            </td>`;
-            schoolMonths.forEach((m, mIdx) => { if (activeMonth===null || activeMonth===mIdx) tr.innerHTML += `<td colspan="${activeMonth===mIdx?m.days.length:1}"></td>`; });
-            tbody.appendChild(tr);
+            </form>
+        </div>
+    </div>
 
-            if(classe.isOpen) {
-                classe.students.forEach((st, sIdx) => {
-                    let trSt = document.createElement('tr');
-                    trSt.draggable = true;
-                    trSt.ondragstart = () => onDragStart(cIdx, sIdx);
-                    trSt.ondragover = onDragOver; trSt.ondragleave = onDragLeave; trSt.ondrop = (e) => onDrop(e, cIdx, sIdx);
+    <!-- Modal Ajouter Matière -->
+    <div id="subjectModal" class="modal-overlay">
+        <div class="modal">
+            <h2>➕ Ajouter une matière</h2>
+            <form id="subjectForm">
+                <div class="form-group">
+                    <label for="subjectName">Nom de la matière</label>
+                    <input type="text" id="subjectName" class="form-input" required placeholder="Ex: SCIENCES">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('subjectModal')">Annuler</button>
+                    <button type="submit" class="btn btn-success">Ajouter</button>
+                </div>
+            </form>
+            
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">Matières existantes</h3>
+            <ul id="subjectList" class="item-list"></ul>
+        </div>
+    </div>
 
-                    let stHtml = `<td class="col-main" style="padding-left:12px; color:#34495e;">
-                        <div style="display:flex; align-items:center;">
-                            <span class="drag-handle">⠿</span>
-                            <span onclick="renameStudent(${cIdx},${sIdx})" style="cursor:pointer; flex-grow:1">${st.name}</span>
-                            <button class="btn-del" onclick="deleteStudent(${cIdx},${sIdx})">×</button>
-                        </div>
-                    </td>`;
-                    schoolMonths.forEach((m, mIdx) => {
-                        if (activeMonth === mIdx) m.days.forEach(day => { 
-                            let k = mIdx+'-'+day.num; let val = st.data[k]||''; 
-                            let highlight = isToday(mIdx, day.num) ? ' today-highlight' : '';
-                            stHtml += `<td class="cell-abs st-${val||'none'}${highlight}" onclick="updateStatus(${cIdx},${sIdx},'${k}')">${val}</td>`; 
-                        });
-                        else if (activeMonth === null) stHtml += `<td></td>`;
-                    });
-                    trSt.innerHTML = stHtml; tbody.appendChild(trSt);
-                });
-            }
-        });
-        document.getElementById('globalStats').innerHTML = `Global : &nbsp; <b>${totalA}</b> Absences &nbsp; | &nbsp; <b>${totalE}</b> Excusés`;
-    }
-
-    // --- Fonctions PDF, Import, Reset, etc. (Conservées) ---
-    async function deleteClass(cIdx) {
-        const confirm = await showModal({ title: '⚠️ Supprimer', content: `Supprimer <b>${schoolData[cIdx].name}</b> ?`, buttons: [{ text: 'Non', action: 'cancel' }, { text: 'Oui', color: 'var(--absent)' }] });
-        if (confirm) { schoolData.splice(cIdx,1); save(); renderAll(); }
-    }
-    async function deleteStudent(cIdx, sIdx) {
-        const confirm = await showModal({ title: 'Supprimer', content: `Retirer l'élève ?`, buttons: [{ text: 'Non', action: 'cancel' }, { text: 'Oui', color: 'var(--absent)' }] });
-        if (confirm) { schoolData[cIdx].students.splice(sIdx,1); save(); renderAll(); }
-    }
-    async function renameClass(cIdx) {
-        const n = await showModal({ title: 'Renommer', content: 'Nom :', showInput: true, inputValue: schoolData[cIdx].name, buttons: [{ text: 'Ok', color: 'var(--blue)' }] });
-        if (n) { schoolData[cIdx].name = n; save(); renderAll(); }
-    }
-    async function renameStudent(cIdx, sIdx) {
-        const n = await showModal({ title: 'Renommer', content: 'Nom :', showInput: true, inputValue: schoolData[cIdx].students[sIdx].name, buttons: [{ text: 'Ok', color: 'var(--blue)' }] });
-        if (n) { schoolData[cIdx].students[sIdx].name = n; save(); renderAll(); }
-    }
-    function updateStatus(cIdx, sIdx, key) {
-        const st = schoolData[cIdx].students[sIdx];
-        const states = ['', 'A', 'Exc'];
-        st.data[key] = states[(states.indexOf(st.data[key]||'') + 1) % states.length];
-        save(); renderAll();
-    }
-    function isToday(mIdx, dNum) { const now = new Date(); const conf = monthConfigs[mIdx]; return now.getDate() === dNum && now.getMonth() === conf.m && now.getFullYear() === conf.y; }
-    function toggleAllClasses(open) { schoolData.forEach(c => c.isOpen = open); renderAll(); }
-    function exportJSON() { const a = document.createElement('a'); a.href="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify({schoolData, excludedDates})); a.download="backup.json"; a.click(); }
-    async function importJSON(e) { /* Logic import JSON... */ location.reload(); }
-    async function confirmClearAll() { const c = await showModal({ title: 'RESET', content: 'Effacer TOUT ?', buttons: [{ text: 'Non', action: 'cancel' }, { text: 'OUI', color: 'var(--absent)' }] }); if(c){ schoolData=[]; excludedDates=[]; await save(); location.reload(); } }
-    
-    function importCSV(e) {
-        const file = e.target.files[0]; if (!file) return;
-        const r = new FileReader();
-        r.onload = (ev) => {
-            ev.target.result.split(/\r?\n/).forEach(l => {
-                const p = l.trim().split(/[;,]/); 
-                if (p.length > 1) {
-                    let c = schoolData.find(x => x.name.toLowerCase() === p[0].trim().toLowerCase());
-                    if (!c) { c = { name: p[0].trim(), students: [], isOpen: true }; schoolData.push(c); }
-                    c.students.push({ name: p[1].trim(), data: {} });
-                }
-            });
-            save(); renderAll(); e.target.value = ''; 
-        };
-        r.readAsText(file);
-    }
-
-    // Intégration PDF version détaillée comme demandé précédemment
-    async function exportPDF() {
-        if (activeMonth === null) { alert("Sélectionnez un mois"); return; }
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('p', 'mm', 'a4');
-        const monthName = monthConfigs[activeMonth].name;
-        const year = monthConfigs[activeMonth].y;
-        doc.setFontSize(14); doc.text(`Détail Absences : ${monthName} ${year}`, 14, 12);
-        let tableRows = [];
-        [...schoolData].sort((a,b)=>a.name.localeCompare(b.name)).forEach(classe => {
-            let abs = [];
-            classe.students.forEach(st => {
-                let dA = [], dE = [];
-                Object.keys(st.data).filter(k=>k.startsWith(activeMonth+'-')).forEach(k=>{
-                    if(st.data[k]==='A') dA.push(k.split('-')[1]);
-                    if(st.data[k]==='Exc') dE.push(k.split('-')[1]);
-                });
-                if(dA.length || dE.length) abs.push([st.name, `${dA.length}A ${dE.length}E`, `A:${dA.join(',')} Exc:${dE.join(',')}`]);
-            });
-            if(abs.length){
-                tableRows.push([{content: `CLASSE : ${classe.name}`, colSpan:3, styles:{fillColor:[240,240,240], fontStyle:'bold'}}]);
-                abs.sort((a,b)=>a[0].localeCompare(b[0])).forEach(row => tableRows.push(row));
-            }
-        });
-        doc.autoTable({ startY: 20, head: [['Élève', 'Total', 'Dates']], body: tableRows, theme:'grid', styles:{fontSize:7, cellPadding:0.7} });
-        doc.save(`Absences_${monthName}.pdf`);
-    }
-
-    async function showDailySummary(mIdx, dNum, mName) {
-        const key = mIdx + '-' + dNum;
-        let abs = [], exc = [];
-        schoolData.forEach(c => c.students.forEach(st => {
-            if (st.data[key] === 'A') abs.push(`<li><b>[${c.name}]</b> ${st.name}</li>`);
-            if (st.data[key] === 'Exc') exc.push(`<li><b>[${c.name}]</b> ${st.name}</li>`);
-        }));
-        await showModal({ title: `📅 ${dNum} ${mName}`, content: `<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"><div><h3 style="color:var(--absent); font-size:11px;">Absents</h3><ul>${abs.join('')||'<li>-</li>'}</ul></div><div><h3 style="color:#d4ac0d; font-size:11px;">Excusés</h3><ul>${exc.join('')||'<li>-</li>'}</ul></div></div>`, buttons: [{ text: 'Fermer', color: 'var(--blue)' }] });
-    }
-
-    async function openVacationModal() {
-        let list = excludedDates.map((v, i) => `<li>${v.name} <button class="btn-del" onclick="removeVacation(${i})">x</button></li>`).join('');
-        await showModal({ title: '🏖️ Vacances', content: `<input type="text" id="vacName" placeholder="Nom" class="modal-input"><input type="date" id="vacStart" class="modal-input"><input type="date" id="vacEnd" class="modal-input"><button onclick="addVacation()" class="btn-main" style="background:var(--success); width:100%; margin-top:5px;">Ajouter</button><ul>${list}</ul>`, buttons: [{ text: 'Ok' }] });
-        location.reload();
-    }
-    window.addVacation = () => { const n=document.getElementById('vacName').value, s=document.getElementById('vacStart').value, e=document.getElementById('vacEnd').value; if(n&&s&&e){ excludedDates.push({name:n,start:s,end:e}); save(); openVacationModal(); } };
-    window.removeVacation = (i) => { excludedDates.splice(i,1); save(); openVacationModal(); };
-
-    loadFromCloud();
-</script>
+    <!-- Scripts -->
+    <script src="js/storage.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
